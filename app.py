@@ -28,8 +28,13 @@ atr_multiplier = st.slider("ATR Multiplier", 1.0, 3.0, 1.5, 0.1)
 
 if ticker:
     try:
-        df = yf.download(ticker, period="60d")
-        df.dropna(inplace=True)
+        @st.cache_data(ttl=3600)  # Cache data for 1 hour
+def get_stock_data(symbol):
+    data = yf.download(symbol, period="30d", interval="1d")
+    return data.dropna()
+
+df = get_stock_data(ticker)
+
         atr = df.ta.atr(length=14)
         latest_atr = atr.iloc[-1]
         suggested_sl = entry - (latest_atr * atr_multiplier)
