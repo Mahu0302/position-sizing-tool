@@ -17,3 +17,23 @@ st.write(f"• Max Risk: ₹{risk_amount:,.2f}")
 st.write(f"• Risk per Share: ₹{per_share_risk:,.2f}")
 st.write(f"• Shares to Buy: {shares}")
 st.write(f"• Capital Used: ₹{capital_used:,.2f}")
+import yfinance as yf
+import pandas as pd
+import talib
+
+st.markdown("## 📏 ATR-Based Stop-Loss Suggestion")
+ticker = st.text_input("Enter NSE Stock Symbol (e.g., BEL.NS)", value="BEL.NS")
+atr_multiplier = st.slider("ATR Multiplier", 1.0, 3.0, 1.5, 0.1)
+
+if ticker:
+    try:
+        df = yf.download(ticker, period="60d")
+        df.dropna(inplace=True)
+        atr = talib.ATR(df['High'], df['Low'], df['Close'], timeperiod=14)
+        latest_atr = atr.iloc[-1]
+        suggested_sl = entry - (latest_atr * atr_multiplier)
+
+        st.success(f"✅ 14-Day ATR: ₹{latest_atr:.2f}")
+        st.write(f"📍 Suggested Stop-Loss (Entry − {atr_multiplier}×ATR): ₹{suggested_sl:.2f}")
+    except Exception as e:
+        st.error(f"Data fetch failed: {e}")
