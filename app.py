@@ -1,4 +1,7 @@
 import streamlit as st
+import yfinance as yf
+import pandas as pd
+import pandas_ta as ta
 
 st.title("Swing Trade Risk & Position Size Calculator")
 
@@ -17,10 +20,8 @@ st.write(f"• Max Risk: ₹{risk_amount:,.2f}")
 st.write(f"• Risk per Share: ₹{per_share_risk:,.2f}")
 st.write(f"• Shares to Buy: {shares}")
 st.write(f"• Capital Used: ₹{capital_used:,.2f}")
-import yfinance as yf
-import pandas as pd
-import pandas_ta as ta
 
+# ✅ Updated ATR Calculation using pandas_ta
 st.markdown("## 📏 ATR-Based Stop-Loss Suggestion")
 ticker = st.text_input("Enter NSE Stock Symbol (e.g., BEL.NS)", value="BEL.NS")
 atr_multiplier = st.slider("ATR Multiplier", 1.0, 3.0, 1.5, 0.1)
@@ -29,7 +30,7 @@ if ticker:
     try:
         df = yf.download(ticker, period="60d")
         df.dropna(inplace=True)
-        atr = talib.ATR(df['High'], df['Low'], df['Close'], timeperiod=14)
+        atr = df.ta.atr(length=14)
         latest_atr = atr.iloc[-1]
         suggested_sl = entry - (latest_atr * atr_multiplier)
 
