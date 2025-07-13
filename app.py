@@ -19,7 +19,7 @@ st.write(f"• Shares to Buy: {shares}")
 st.write(f"• Capital Used: ₹{capital_used:,.2f}")
 import yfinance as yf
 import pandas as pd
-import talib
+import pandas_ta as ta
 
 st.markdown("## 📏 ATR-Based Stop-Loss Suggestion")
 ticker = st.text_input("Enter NSE Stock Symbol (e.g., BEL.NS)", value="BEL.NS")
