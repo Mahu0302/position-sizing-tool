@@ -34,15 +34,17 @@ if ticker:
             return data.dropna()
 
         df = get_stock_data(ticker)
-        atr_df = df.ta.atr(length=14)
-        col_name = [c for c in atr_df.columns if "ATR" in c][0]
-        latest_atr = atr_df[col_name].iloc[-1]
+        atr_series = df.ta.atr(length=14)
+        latest_atr = atr_series.iloc[-1]
         suggested_sl = entry - (latest_atr * atr_multiplier)
 
         st.success(f"✅ 14-Day ATR: ₹{latest_atr:.2f}")
         st.write(f"📍 Suggested Stop-Loss (Entry − {atr_multiplier}×ATR): ₹{suggested_sl:.2f}")
     except Exception as e:
         st.error(f"Data fetch failed: {e}")
+
+
+        
 
 
 
