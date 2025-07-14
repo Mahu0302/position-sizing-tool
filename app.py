@@ -3,8 +3,10 @@ import yfinance as yf
 import pandas as pd
 import pandas_ta as ta
 from datetime import datetime
-import csv
-import os
+import os, json
+from io import StringIO
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
 
 st.title("Swing Trade Position Sizing & ATR Tool")
 
@@ -36,13 +38,11 @@ if ticker:
             entry = st.number_input("Manual Entry Price (₹)", value=390.0, step=1.0)
             stop_loss = st.number_input("Manual Stop-Loss Price (₹)", value=378.0, step=1.0)
 
-        # Position Sizing Logic
         per_share_risk = abs(entry - stop_loss)
         risk_amount = capital * (risk_pct / 100)
         shares = int(risk_amount // per_share_risk) if per_share_risk > 0 else 0
         capital_used = shares * entry
 
-        # Output
         st.markdown("### 📊 Position Sizing Result")
         st.write(f"• Entry Price: ₹{entry:.2f}")
         st.write(f"• Stop-Loss Price: ₹{stop_loss:.2f}")
@@ -51,8 +51,7 @@ if ticker:
         st.write(f"• Capital Used: ₹{capital_used:,.2f}")
         st.success(f"✅ 14-Day ATR: ₹{latest_atr:.2f}")
 
-        # SL/TP Simulation Table
-        st.markdown("## 🎯 SL/TP Risk-Reward Projections")
+        st.markdown("## 🌟 SL/TP Risk-Reward Projections")
         rr_ratios = [1, 1.5, 2, 2.5, 3]
         results = []
         for rr in rr_ratios:
@@ -67,8 +66,16 @@ if ticker:
             })
         st.dataframe(pd.DataFrame(results))
 
-        # Trade Logging to CSV
-        if st.button("📌 Log Trade to CSV"):
+        def log_to_google_sheet(data_dict):
+            scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+            key_str = os.environ.get("GOOGLE_SHEETS_CRED")
+            key_dict = json.loads(key_str)
+            creds = ServiceAccountCredentials.from_json_keyfile_dict(key_dict, scope)
+            client = gspread.authorize(creds)
+            sheet = client.open("Swing Trade Logs").sheet1
+            sheet.append_row(list(data_dict.values()))
+
+        if st.button("📌 Log Trade to Google Sheets"):
             trade_data = {
                 "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 "Stock": ticker,
@@ -83,18 +90,18 @@ if ticker:
                 "Suggested SL": round(stop_loss, 2)
             }
 
-            file_exists = os.path.isfile("swing_trade_log.csv")
-            with open("swing_trade_log.csv", mode='a', newline='') as file:
-                writer = csv.DictWriter(file, fieldnames=trade_data.keys())
-                if not file_exists:
-                    writer.writeheader()
-                writer.writerow(trade_data)
-
-            st.success("✅ Trade logged successfully!")
+            try:
+                log_to_google_sheet(trade_data)
+                st.success("✅ Trade logged to Google Sheets!")
+            except Exception as e:
+                st.error(f"❌ Logging failed: {e}")
 
     except Exception as e:
         st.error(f"⚠️ Data fetch failed: {e}")
 
+
+        
+        
 
     
 
