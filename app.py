@@ -11,14 +11,11 @@ st.title("Swing Trade Position Sizing & ATR Tool")
 
 capital = st.number_input("Total Capital (₹)", value=100000.0, step=1000.0)
 risk_pct = st.number_input("Risk % per Trade", value=1.0, step=0.1)
-
 ticker = st.text_input("Enter NSE Stock Symbol (e.g., RELIANCE.NS)", value="RELIANCE.NS")
 atr_multiplier = st.slider("ATR Multiplier", 1.0, 3.0, 1.5, 0.1)
-
 use_auto = st.checkbox("Auto-fill Entry & Stop-Loss from Stock Data", value=True)
 
 def log_to_google_sheet(data_dict):
-    """Logs trade data to Google Sheet and returns tuple (success_flag, message)."""
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
     try:
         key_str = os.environ["GOOGLE_SHEETS_CRED"]
@@ -26,7 +23,10 @@ def log_to_google_sheet(data_dict):
         creds = ServiceAccountCredentials.from_json_keyfile_dict(key_dict, scope)
         client = gspread.authorize(creds)
         sheet = client.open("Swing Trade Logs").sheet1
-        sheet.append_row(list(data_dict.values()))
+        res = sheet.append_row(list(data_dict.values()))
+        # If it returns a Response object (successful), treat as success
+        if hasattr(res, "status_code") and res.status_code == 200:
+            return True, "Row added"
         return True, "Row added"
     except Exception as error:
         return False, str(error)
@@ -62,7 +62,7 @@ if ticker:
         st.write(f"• Risk per Share: ₹{per_share_risk:.2f}")
         st.write(f"• Shares to Buy: {shares}")
         st.write(f"• Capital Used: ₹{capital_used:,.2f}")
-        st.success(f"✅ 14-Day ATR: ₹{latest_atr:.2f}")
+        st.success(f"✅ 14‑Day ATR: ₹{latest_atr:.2f}")
 
         st.markdown("## 🌟 SL/TP Risk‑Reward Projections")
         rr_ratios = [1, 1.5, 2, 2.5, 3]
@@ -92,7 +92,6 @@ if ticker:
                 "ATR": round(latest_atr, 2),
                 "Suggested SL": round(stop_loss, 2)
             }
-
             success, msg = log_to_google_sheet(trade_data)
             if success:
                 st.success("✅ Trade logged to Google Sheets!")
