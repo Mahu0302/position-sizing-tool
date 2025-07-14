@@ -67,13 +67,17 @@ if ticker:
         st.dataframe(pd.DataFrame(results))
 
         def log_to_google_sheet(data_dict):
-            scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-            key_str = os.environ.get("GOOGLE_SHEETS_CRED")
-            key_dict = json.loads(key_str)
-            creds = ServiceAccountCredentials.from_json_keyfile_dict(key_dict, scope)
-            client = gspread.authorize(creds)
-            sheet = client.open("Swing Trade Logs").sheet1
-            sheet.append_row(list(data_dict.values()))
+            try:
+                scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+                key_str = os.environ.get("GOOGLE_SHEETS_CRED")
+                key_dict = json.loads(key_str)
+                creds = ServiceAccountCredentials.from_json_keyfile_dict(key_dict, scope)
+                client = gspread.authorize(creds)
+                sheet = client.open("Swing Trade Logs").sheet1
+                sheet.append_row(list(data_dict.values()))
+                return True
+            except Exception as error:
+                return error
 
         if st.button("📌 Log Trade to Google Sheets"):
             trade_data = {
@@ -90,16 +94,24 @@ if ticker:
                 "Suggested SL": round(stop_loss, 2)
             }
 
-            try:
-                log_to_google_sheet(trade_data)
-                st.success("✅ Trade logged to Google Sheets!")
-            except Exception as e:
-                st.error(f"❌ Logging failed: {str(e)}")
+            result = log_to_google_sheet(trade_data)
 
+            if result == True:
+                st.success("✅ Trade logged to Google Sheets!")
+            else:
+                st.error(f"❌ Logging failed: {result}")
 
     except Exception as e:
         st.error(f"⚠️ Data fetch failed: {e}")
 
+           
+
+       
+
+        
+
+
+    
 
         
         
