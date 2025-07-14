@@ -94,7 +94,8 @@ if ticker:
                 log_to_google_sheet(trade_data)
                 st.success("✅ Trade logged to Google Sheets!")
             except Exception as e:
-                st.error(f"❌ Logging failed: {e}")
+                st.error(f"❌ Logging failed: {str(e)}")
+
 
     except Exception as e:
         st.error(f"⚠️ Data fetch failed: {e}")
