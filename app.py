@@ -4,7 +4,6 @@ import pandas as pd
 import pandas_ta as ta
 from datetime import datetime
 import os, json
-from io import StringIO
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 
@@ -17,6 +16,20 @@ ticker = st.text_input("Enter NSE Stock Symbol (e.g., RELIANCE.NS)", value="RELI
 atr_multiplier = st.slider("ATR Multiplier", 1.0, 3.0, 1.5, 0.1)
 
 use_auto = st.checkbox("Auto-fill Entry & Stop-Loss from Stock Data", value=True)
+
+def log_to_google_sheet(data_dict):
+    """Logs trade data to Google Sheet and returns tuple (success_flag, message)."""
+    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+    try:
+        key_str = os.environ["GOOGLE_SHEETS_CRED"]
+        key_dict = json.loads(key_str)
+        creds = ServiceAccountCredentials.from_json_keyfile_dict(key_dict, scope)
+        client = gspread.authorize(creds)
+        sheet = client.open("Swing Trade Logs").sheet1
+        sheet.append_row(list(data_dict.values()))
+        return True, "Row added"
+    except Exception as error:
+        return False, str(error)
 
 if ticker:
     try:
@@ -51,33 +64,19 @@ if ticker:
         st.write(f"• Capital Used: ₹{capital_used:,.2f}")
         st.success(f"✅ 14-Day ATR: ₹{latest_atr:.2f}")
 
-        st.markdown("## 🌟 SL/TP Risk-Reward Projections")
+        st.markdown("## 🌟 SL/TP Risk‑Reward Projections")
         rr_ratios = [1, 1.5, 2, 2.5, 3]
         results = []
         for rr in rr_ratios:
             target = entry + (per_share_risk * rr)
-            profit_per_share = target - entry
-            total_profit = profit_per_share * shares
+            profit = (target - entry) * shares
             results.append({
                 "R:R": f"{rr}:1",
-                "Target Price (₹)": f"{target:.2f}",
-                "Profit/Share (₹)": f"{profit_per_share:.2f}",
-                "Total Profit (₹)": f"{total_profit:.2f}"
+                "Target (₹)": f"{target:.2f}",
+                "Profit/Share (₹)": f"{target - entry:.2f}",
+                "Total Profit (₹)": f"{profit:.2f}"
             })
         st.dataframe(pd.DataFrame(results))
-
-        def log_to_google_sheet(data_dict):
-            try:
-                scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-                key_str = os.environ.get("GOOGLE_SHEETS_CRED")
-                key_dict = json.loads(key_str)
-                creds = ServiceAccountCredentials.from_json_keyfile_dict(key_dict, scope)
-                client = gspread.authorize(creds)
-                sheet = client.open("Swing Trade Logs").sheet1
-                sheet.append_row(list(data_dict.values()))
-                return True
-            except Exception as error:
-                return error
 
         if st.button("📌 Log Trade to Google Sheets"):
             trade_data = {
@@ -94,36 +93,11 @@ if ticker:
                 "Suggested SL": round(stop_loss, 2)
             }
 
-            result = log_to_google_sheet(trade_data)
-
-            if result == True:
+            success, msg = log_to_google_sheet(trade_data)
+            if success:
                 st.success("✅ Trade logged to Google Sheets!")
             else:
-                st.error(f"❌ Logging failed: {result}")
+                st.error(f"❌ Logging failed: {msg}")
 
     except Exception as e:
         st.error(f"⚠️ Data fetch failed: {e}")
-
-           
-
-       
-
-        
-
-
-    
-
-        
-        
-
-    
-
-
-
-
-        
-
-
-
-
-      
