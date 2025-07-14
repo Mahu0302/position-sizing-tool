@@ -34,6 +34,9 @@ if ticker:
             return data.dropna()
 
         df = get_stock_data(ticker)
+df.ta.strategy("atr")
+atr_series = df["ATR_14"]
+        
         atr_series = df.ta.atr(length=14)
         latest_atr = atr_series.iloc[-1]
         suggested_sl = entry - (latest_atr * atr_multiplier)
